@@ -17,7 +17,9 @@ import argparse
 import os
 import base64
 from typing import List, Dict
-from pyspark.sql import SparkSession, DataFrame, functions as F, types as T
+from pyspark.sql import SparkSession, DataFrame, Window, functions as F, types as T
+import os
+import time
 
 def build_spark(app_name: str, shuffle_partitions: int = 200) -> SparkSession:
     spark = (
@@ -30,11 +32,17 @@ def build_spark(app_name: str, shuffle_partitions: int = 200) -> SparkSession:
 
 def read_trips(spark: SparkSession, input_paths: List[str]) -> DataFrame:
     # TODO: Read multiple Parquet files, e.g., spark.read.parquet(*input_paths)
-    raise NotImplementedError
+    input_paths = [os.path.abspath(a_path) for a_path in input_paths]
+    print(*input_paths)
+    parq_df = spark.read.parquet(*input_paths)
+
+    return parq_df
 
 def read_zones(spark: SparkSession, zone_csv: str) -> DataFrame:
     # TODO: Read CSV with header=True, inferSchema=True
-    raise NotImplementedError
+    csv_df = spark.read.options(header=True, inferSchema=True).csv(zone_csv)
+    
+    return csv_df
 
 def clean_and_transform(df: DataFrame) -> DataFrame:
     """
@@ -50,8 +58,26 @@ def clean_and_transform(df: DataFrame) -> DataFrame:
       * week_of_year (1-53)
       * vendor_name (1->'Creative', 2->'VeriFone', else id string or 'Unknown')
     """
-    # TODO
-    raise NotImplementedError
+
+    #helpful spark functions for converting to date/hour/week: https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.functions.weekofyear.html
+
+    df_clean = (
+        df.filter(
+            (F.col("passenger_count") > 0) &
+            (F.col("trip_distance") > 0) &
+            (F.col("fare_amount") >= 0) 
+        ).withColumn("tpep_pickup_datetime", F.col("tpep_pickup_datetime").cast(T.TimestampType()))
+          .withColumn("tpep_dropoff_datetime", F.col("tpep_dropoff_datetime").cast(T.TimestampType()))
+          .withColumn("passenger_count", F.col("passenger_count").cast(T.IntegerType()))
+          .withColumn("trip_distance", F.col("trip_distance").cast(T.DoubleType()))
+          .withColumn("fare_amount", F.col("fare_amount").cast(T.DoubleType()))
+          .withColumn("pickup_date", F.to_date(F.col("tpep_pickup_datetime")))
+          .withColumn("pickup_hour", F.hour(F.col("tpep_pickup_datetime")))
+          .withColumn("week_of_year", F.weekofyear(F.col("tpep_pickup_datetime")))
+          .withColumn("vendor_name", F.when(F.col("VendorID")==1, F.lit("Creative")).when(F.col("VendorID")==2, F.lit("VeriFone")).otherwise(F.lit("Unknown")))
+    )
+
+    return df_clean
 
 def join_zones(df: DataFrame, zones: DataFrame) -> DataFrame:
     """
@@ -59,28 +85,54 @@ def join_zones(df: DataFrame, zones: DataFrame) -> DataFrame:
     - zones: LocationID, Borough, Zone
     - Consider broadcasting zones (small table)
     """
-    # TODO
-    raise NotImplementedError
+    zones_select = zones.select("LocationID", "Borough", "Zone")
+    #pu join
+    pu_joined_df = (
+        df.join(F.broadcast(zones_select), df.PULocationID == zones_select.LocationID, "left")
+        .drop("LocationID").withColumnRenamed("Zone", "PU_Zone").withColumnRenamed("Borough", "PU_Borough")
+    )
+    #do join
+    pu_do_joined_df = (
+        pu_joined_df.join(F.broadcast(zones_select), df.DOLocationID == zones_select.LocationID, "left")
+        .drop("LocationID").withColumnRenamed("Zone", "DO_Zone").withColumnRenamed("Borough", "DO_Borough")
+    )
+
+    #print(pu_do_joined_df.select("PULocationID","DOLocationID","PU_Zone", "DO_Zone").show(10))
+    print(f"Join type:")
+    pu_do_joined_df.explain()
+    return pu_do_joined_df
+
+
 
 def agg_hourly_pickups(df_enriched: DataFrame) -> DataFrame:
     # TODO: group by pickup_date, pickup_hour, PU_Zone (or PU_Borough) and count
-    raise NotImplementedError
+    return df_enriched.groupBy("pickup_date", "pickup_hour", "PU_Zone").count()
 
 def agg_top10_zones_daily(df_enriched: DataFrame) -> DataFrame:
     # TODO: daily top 10 zones by trips with rank
-    raise NotImplementedError
+    daily_counts = (
+        df_enriched.groupBy("pickup_date", "PU_Zone").count().withColumnRenamed("count", "PU_Zone_Count")
+    )
+
+    window_spec = Window.partitionBy("pickup_date").orderBy(F.desc("PU_Zone_Count"))
+    return daily_counts.withColumn("rank", F.row_number().over(window_spec)).filter(F.col("rank") <= 10)
 
 def agg_weekly_revenue_per_vendor(df_enriched: DataFrame) -> DataFrame:
     # TODO: sum total_amount by vendor_name and week_of_year
-    raise NotImplementedError
+    return df_enriched.groupBy("vendor_name", "week_of_year").agg(F.sum("total_amount"))
+
 
 def write_curated(df_enriched: DataFrame, out_path: str):
     # TODO: write partitioned by pickup_date as parquet (mode overwrite or append)
-    raise NotImplementedError
+    #https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrameWriter.partitionBy.html
+    df_enriched.write.partitionBy("pickup_date").mode("overwrite").format("parquet").save(out_path)
 
-def write_aggregates_local(dfs: Dict[str, DataFrame], out_root: str):
+def write_aggregates_local(dfs: Dict[str, DataFrame], out_oot: str):
     # TODO: write each df as parquet under out_root/<name>
-    raise NotImplementedError
+    #option("compression", "snappy")
+    for df_name, df in dfs.items():
+        save_path = os.path.join(out_oot, df_name)
+        df.write.mode("overwrite").format("parquet").save(save_path)
 
 def _decode_pem_from_b64(b64_str: str) -> str:
     if not b64_str:
@@ -100,14 +152,15 @@ def write_to_snowflake(dfs: Dict[str, DataFrame], sf_opts: Dict[str, str], mode:
     - Call writer.mode(mode).save()
     """
     # TODO: Implement Snowflake writes using sf_opts.
-    raise NotImplementedError
+    writer = df.write.format("snowflake").options(**sf_opts).option("dbtable", "HW4TABLE")
+    witer.mode(mode).save()
 
 def parse_args():
     p = argparse.ArgumentParser()
-    p.add_argument("--input_paths", nargs="+", required=True)
-    p.add_argument("--zone_csv", required=True)
-    p.add_argument("--curated_out", required=True)
-    p.add_argument("--aggregates_out", required=True)
+    p.add_argument("--input_paths", nargs="+", required=False, default=["./data/raw/yellow_tripdata_2023-04.parquet", "./data/raw/yellow_tripdata_2023-03.parquet", "./data/raw/yellow_tripdata_2023-02.parquet"])
+    p.add_argument("--zone_csv", required=False, default="./data/raw/taxi_zone_lookup.csv")
+    p.add_argument("--curated_out", required=False)
+    p.add_argument("--aggregates_out", required=False)
     p.add_argument("--shuffle_partitions", type=int, default=200)
     # Snowflake options
     p.add_argument("--write_snowflake", type=str, default="false")
@@ -125,17 +178,32 @@ def parse_args():
 def main():
     args = parse_args()
     spark = build_spark("NYC Taxi ETL (Student)", shuffle_partitions=args.shuffle_partitions)
-
+    print(args.input_paths)
     trips = read_trips(spark, args.input_paths)
     zones = read_zones(spark, args.zone_csv)
+    print(trips.show(10))
+    print(zones.show(10))
+
+    #measure time for join and aggregate fuctnions
+    start_time = time.perf_counter()
+
     clean = clean_and_transform(trips)
+    print(clean.show(10))
+    print(clean.select("PULocationID", "DOLocationID").show(10))
     enriched = join_zones(clean, zones)
 
-    # Aggregations
+    # # Aggregations
     hourly = agg_hourly_pickups(enriched)
     top10 = agg_top10_zones_daily(enriched)
     weekly_rev = agg_weekly_revenue_per_vendor(enriched)
 
+    end_time = time.perf_counter()
+    print(hourly.show(10))
+    print(top10.show(20))
+    print(weekly_rev.show(10))
+    print(enriched.show(10))
+    print(f"Time elapsed for clean, join, and aggregates: {end_time-start_time:.4f}")
+    
     # Outputs
     write_curated(enriched, args.curated_out)
     write_aggregates_local(
@@ -143,30 +211,30 @@ def main():
         args.aggregates_out,
     )
 
-    if args.write_snowflake.lower() == "true":
-        sf_opts = {
-            "sfURL": args.sfURL,
-            "sfUser": args.sfUser,
-            "sfDatabase": args.sfDatabase,
-            "sfSchema": args.sfSchema,
-            "sfWarehouse": args.sfWarehouse,
-            "sfAuthenticator": args.sfAuthenticator,
-        }
-        # Prefer key-pair if provided
-        pem = _decode_pem_from_b64(args.sfPrivateKeyB64)
-        if pem:
-            sf_opts["pem_private_key"] = pem
-            if args.sfPrivateKeyPassphrase:
-                sf_opts["pem_private_key_passphrase"] = args.sfPrivateKeyPassphrase
-        elif args.sfPassword:
-            # Fallback to username/password if allowed by your account policy
-            sf_opts["sfPassword"] = args.sfPassword
+    # if args.write_snowflake.lower() == "true":
+    #     sf_opts = {
+    #         "sfURL": args.sfURL,
+    #         "sfUser": args.sfUser,
+    #         "sfDatabase": args.sfDatabase,
+    #         "sfSchema": args.sfSchema,
+    #         "sfWarehouse": args.sfWarehouse,
+    #         "sfAuthenticator": args.sfAuthenticator,
+    #     }
+    #     # Prefer key-pair if provided
+    #     pem = _decode_pem_from_b64(args.sfPrivateKeyB64)
+    #     if pem:
+    #         sf_opts["pem_private_key"] = pem
+    #         if args.sfPrivateKeyPassphrase:
+    #             sf_opts["pem_private_key_passphrase"] = args.sfPrivateKeyPassphrase
+    #     elif args.sfPassword:
+    #         # Fallback to username/password if allowed by your account policy
+    #         sf_opts["sfPassword"] = args.sfPassword
 
-        write_to_snowflake(
-            {"HOURLY_PICKUPS": hourly, "TOP10_ZONES_DAILY": top10, "WEEKLY_REVENUE_VENDOR": weekly_rev},
-            sf_opts,
-            mode="overwrite",
-        )
+    #     write_to_snowflake(
+    #         {"HOURLY_PICKUPS": hourly, "TOP10_ZONES_DAILY": top10, "WEEKLY_REVENUE_VENDOR": weekly_rev},
+    #         sf_opts,
+    #         mode="overwrite",
+    #     )
 
     spark.stop()
 
