@@ -15,3 +15,5 @@ data/
 
 # Pytest cache (if students add tests locally)
 .pytest_cache/
+
+sf_rsa_key.b64

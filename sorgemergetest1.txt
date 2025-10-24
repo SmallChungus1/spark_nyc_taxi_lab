@@ -1,0 +1,169 @@
+['data/raw/yellow_tripdata_2023-02.parquet', 'data/raw/yellow_tripdata_2023-03.parquet']
+/home/compute/hanson.l/spark-nyc-taxi-student/data/raw/yellow_tripdata_2023-02.parquet /home/compute/hanson.l/spark-nyc-taxi-student/data/raw/yellow_tripdata_2023-03.parquet
++--------+--------------------+---------------------+---------------+-------------+----------+------------------+------------+------------+------------+-----------+-----+-------+----------+------------+---------------------+------------+--------------------+-----------+
+|VendorID|tpep_pickup_datetime|tpep_dropoff_datetime|passenger_count|trip_distance|RatecodeID|store_and_fwd_flag|PULocationID|DOLocationID|payment_type|fare_amount|extra|mta_tax|tip_amount|tolls_amount|improvement_surcharge|total_amount|congestion_surcharge|Airport_fee|
++--------+--------------------+---------------------+---------------+-------------+----------+------------------+------------+------------+------------+-----------+-----+-------+----------+------------+---------------------+------------+--------------------+-----------+
+|       1| 2023-02-01 00:32:53|  2023-02-01 00:34:34|              2|          0.3|         1|                 N|         142|         163|           2|        4.4|  3.5|    0.5|       0.0|         0.0|                  1.0|         9.4|                 2.5|        0.0|
+|       2| 2023-02-01 00:35:16|  2023-02-01 00:35:30|              1|          0.0|         1|                 N|          71|          71|           4|       -3.0| -1.0|   -0.5|       0.0|         0.0|                 -1.0|        -5.5|                 0.0|        0.0|
+|       2| 2023-02-01 00:35:16|  2023-02-01 00:35:30|              1|          0.0|         1|                 N|          71|          71|           4|        3.0|  1.0|    0.5|       0.0|         0.0|                  1.0|         5.5|                 0.0|        0.0|
+|       1| 2023-02-01 00:29:33|  2023-02-01 01:01:38|              0|         18.8|         1|                 N|         132|          26|           1|       70.9| 2.25|    0.5|       0.0|         0.0|                  1.0|       74.65|                 0.0|       1.25|
+|       2| 2023-02-01 00:12:28|  2023-02-01 00:25:46|              1|         3.22|         1|                 N|         161|         145|           1|       17.0|  1.0|    0.5|       3.3|         0.0|                  1.0|        25.3|                 2.5|        0.0|
+|       1| 2023-02-01 00:52:40|  2023-02-01 01:07:18|              1|          5.1|         1|                 N|         148|         236|           1|       21.9|  3.5|    0.5|      5.35|         0.0|                  1.0|       32.25|                 2.5|        0.0|
+|       1| 2023-02-01 00:12:39|  2023-02-01 00:40:36|              1|          8.9|         1|                 N|         137|         244|           1|       41.5|  3.5|    0.5|       3.5|         0.0|                  1.0|        50.0|                 2.5|        0.0|
+|       1| 2023-02-01 00:56:53|  2023-02-01 01:00:37|              1|          1.2|         1|                 N|         263|         141|           1|        7.2|  3.5|    0.5|      2.44|         0.0|                  1.0|       14.64|                 2.5|        0.0|
+|       2| 2023-02-01 00:20:40|  2023-02-01 00:33:56|              1|         7.49|         1|                 N|          48|         243|           1|       30.3|  1.0|    0.5|      8.82|         0.0|                  1.0|       44.12|                 2.5|        0.0|
+|       2| 2023-02-01 00:33:51|  2023-02-01 00:37:34|              1|         0.51|         1|                 N|         114|         211|           1|        5.8|  1.0|    0.5|      1.62|         0.0|                  1.0|       12.42|                 2.5|        0.0|
++--------+--------------------+---------------------+---------------+-------------+----------+------------------+------------+------------+------------+-----------+-----+-------+----------+------------+---------------------+------------+--------------------+-----------+
+only showing top 10 rows
+None
++----------+-------------+--------------------+------------+
+|LocationID|      Borough|                Zone|service_zone|
++----------+-------------+--------------------+------------+
+|         1|          EWR|      Newark Airport|         EWR|
+|         2|       Queens|         Jamaica Bay|   Boro Zone|
+|         3|        Bronx|Allerton/Pelham G...|   Boro Zone|
+|         4|    Manhattan|       Alphabet City| Yellow Zone|
+|         5|Staten Island|       Arden Heights|   Boro Zone|
+|         6|Staten Island|Arrochar/Fort Wad...|   Boro Zone|
+|         7|       Queens|             Astoria|   Boro Zone|
+|         8|       Queens|        Astoria Park|   Boro Zone|
+|         9|       Queens|          Auburndale|   Boro Zone|
+|        10|       Queens|        Baisley Park|   Boro Zone|
++----------+-------------+--------------------+------------+
+only showing top 10 rows
+None
++--------+--------------------+---------------------+---------------+-------------+----------+------------------+------------+------------+------------+-----------+-----+-------+----------+------------+---------------------+------------+--------------------+-----------+-----------+-----------+------------+-----------+
+|VendorID|tpep_pickup_datetime|tpep_dropoff_datetime|passenger_count|trip_distance|RatecodeID|store_and_fwd_flag|PULocationID|DOLocationID|payment_type|fare_amount|extra|mta_tax|tip_amount|tolls_amount|improvement_surcharge|total_amount|congestion_surcharge|Airport_fee|pickup_date|pickup_hour|week_of_year|vendor_name|
++--------+--------------------+---------------------+---------------+-------------+----------+------------------+------------+------------+------------+-----------+-----+-------+----------+------------+---------------------+------------+--------------------+-----------+-----------+-----------+------------+-----------+
+|       1| 2023-02-01 00:32:53|  2023-02-01 00:34:34|              2|          0.3|         1|                 N|         142|         163|           2|        4.4|  3.5|    0.5|       0.0|         0.0|                  1.0|         9.4|                 2.5|        0.0| 2023-02-01|          0|           5|   Creative|
+|       2| 2023-02-01 00:12:28|  2023-02-01 00:25:46|              1|         3.22|         1|                 N|         161|         145|           1|       17.0|  1.0|    0.5|       3.3|         0.0|                  1.0|        25.3|                 2.5|        0.0| 2023-02-01|          0|           5|   VeriFone|
+|       1| 2023-02-01 00:52:40|  2023-02-01 01:07:18|              1|          5.1|         1|                 N|         148|         236|           1|       21.9|  3.5|    0.5|      5.35|         0.0|                  1.0|       32.25|                 2.5|        0.0| 2023-02-01|          0|           5|   Creative|
+|       1| 2023-02-01 00:12:39|  2023-02-01 00:40:36|              1|          8.9|         1|                 N|         137|         244|           1|       41.5|  3.5|    0.5|       3.5|         0.0|                  1.0|        50.0|                 2.5|        0.0| 2023-02-01|          0|           5|   Creative|
+|       1| 2023-02-01 00:56:53|  2023-02-01 01:00:37|              1|          1.2|         1|                 N|         263|         141|           1|        7.2|  3.5|    0.5|      2.44|         0.0|                  1.0|       14.64|                 2.5|        0.0| 2023-02-01|          0|           5|   Creative|
+|       2| 2023-02-01 00:20:40|  2023-02-01 00:33:56|              1|         7.49|         1|                 N|          48|         243|           1|       30.3|  1.0|    0.5|      8.82|         0.0|                  1.0|       44.12|                 2.5|        0.0| 2023-02-01|          0|           5|   VeriFone|
+|       2| 2023-02-01 00:33:51|  2023-02-01 00:37:34|              1|         0.51|         1|                 N|         114|         211|           1|        5.8|  1.0|    0.5|      1.62|         0.0|                  1.0|       12.42|                 2.5|        0.0| 2023-02-01|          0|           5|   VeriFone|
+|       2| 2023-02-01 01:00:45|  2023-02-01 01:06:00|              1|         0.78|         1|                 N|         114|         249|           1|        7.2|  1.0|    0.5|      2.44|         0.0|                  1.0|       14.64|                 2.5|        0.0| 2023-02-01|          1|           5|   VeriFone|
+|       2| 2023-02-01 00:10:48|  2023-02-01 00:18:09|              1|         1.57|         1|                 N|         125|         107|           1|       10.0|  1.0|    0.5|       1.0|         0.0|                  1.0|        16.0|                 2.5|        0.0| 2023-02-01|          0|           5|   VeriFone|
+|       2| 2023-02-01 00:00:28|  2023-02-01 00:12:54|              1|          5.4|         1|                 N|         140|          42|           1|       23.3|  1.0|    0.5|       2.0|         0.0|                  1.0|        30.3|                 2.5|        0.0| 2023-02-01|          0|           5|   VeriFone|
++--------+--------------------+---------------------+---------------+-------------+----------+------------------+------------+------------+------------+-----------+-----+-------+----------+------------+---------------------+------------+--------------------+-----------+-----------+-----------+------------+-----------+
+only showing top 10 rows
+None
++------------+------------+
+|PULocationID|DOLocationID|
++------------+------------+
+|         142|         163|
+|         161|         145|
+|         148|         236|
+|         137|         244|
+|         263|         141|
+|          48|         243|
+|         114|         211|
+|         114|         249|
+|         125|         107|
+|         140|          42|
++------------+------------+
+only showing top 10 rows
+None
+using sort merge join
+sort merge join settings: -1 | true
+join_zones time elapsed: 0.0849
+Join Plan:
+== Physical Plan ==
+AdaptiveSparkPlan isFinalPlan=false
++- Project [VendorID#0, tpep_pickup_datetime#117, tpep_dropoff_datetime#118, passenger_count#119, trip_distance#4, RatecodeID#5L, store_and_fwd_flag#6, PULocationID#7, DOLocationID#8, payment_type#9L, fare_amount#10, extra#11, mta_tax#12, tip_amount#13, tolls_amount#14, improvement_surcharge#15, total_amount#16, congestion_surcharge#17, Airport_fee#18, pickup_date#122, pickup_hour#123, week_of_year#124, vendor_name#125, PU_Borough#204, PU_Zone#203, ... 2 more fields]
+   +- SortMergeJoin [DOLocationID#8], [LocationID#205], LeftOuter
+      :- Sort [DOLocationID#8 ASC NULLS FIRST], false, 0
+      :  +- Exchange hashpartitioning(DOLocationID#8, 25), ENSURE_REQUIREMENTS, [plan_id=150]
+      :     +- Project [VendorID#0, tpep_pickup_datetime#117, tpep_dropoff_datetime#118, passenger_count#119, trip_distance#4, RatecodeID#5L, store_and_fwd_flag#6, PULocationID#7, DOLocationID#8, payment_type#9L, fare_amount#10, extra#11, mta_tax#12, tip_amount#13, tolls_amount#14, improvement_surcharge#15, total_amount#16, congestion_surcharge#17, Airport_fee#18, pickup_date#122, pickup_hour#123, week_of_year#124, vendor_name#125, Borough#37 AS PU_Borough#204, Zone#38 AS PU_Zone#203]
+      :        +- SortMergeJoin [PULocationID#7], [LocationID#36], LeftOuter
+      :           :- Sort [PULocationID#7 ASC NULLS FIRST], false, 0
+      :           :  +- Exchange hashpartitioning(PULocationID#7, 25), ENSURE_REQUIREMENTS, [plan_id=142]
+      :           :     +- Project [VendorID#0, tpep_pickup_datetime#117, tpep_dropoff_datetime#118, passenger_count#119, trip_distance#4, RatecodeID#5L, store_and_fwd_flag#6, PULocationID#7, DOLocationID#8, payment_type#9L, fare_amount#10, extra#11, mta_tax#12, tip_amount#13, tolls_amount#14, improvement_surcharge#15, total_amount#16, congestion_surcharge#17, Airport_fee#18, cast(tpep_pickup_datetime#117 as date) AS pickup_date#122, hour(tpep_pickup_datetime#117, Some(Etc/UTC)) AS pickup_hour#123, weekofyear(cast(tpep_pickup_datetime#117 as date)) AS week_of_year#124, CASE WHEN (VendorID#0 = 1) THEN Creative WHEN (VendorID#0 = 2) THEN VeriFone ELSE Unknown END AS vendor_name#125]
+      :           :        +- Project [VendorID#0, cast(tpep_pickup_datetime#1 as timestamp) AS tpep_pickup_datetime#117, cast(tpep_dropoff_datetime#2 as timestamp) AS tpep_dropoff_datetime#118, cast(passenger_count#3L as int) AS passenger_count#119, trip_distance#4, RatecodeID#5L, store_and_fwd_flag#6, PULocationID#7, DOLocationID#8, payment_type#9L, fare_amount#10, extra#11, mta_tax#12, tip_amount#13, tolls_amount#14, improvement_surcharge#15, total_amount#16, congestion_surcharge#17, Airport_fee#18]
+      :           :           +- Filter (((((isnotnull(passenger_count#3L) AND isnotnull(trip_distance#4)) AND isnotnull(fare_amount#10)) AND (passenger_count#3L > 0)) AND (trip_distance#4 > 0.0)) AND (fare_amount#10 >= 0.0))
+      :           :              +- FileScan parquet [VendorID#0,tpep_pickup_datetime#1,tpep_dropoff_datetime#2,passenger_count#3L,trip_distance#4,RatecodeID#5L,store_and_fwd_flag#6,PULocationID#7,DOLocationID#8,payment_type#9L,fare_amount#10,extra#11,mta_tax#12,tip_amount#13,tolls_amount#14,improvement_surcharge#15,total_amount#16,congestion_surcharge#17,Airport_fee#18] Batched: true, DataFilters: [isnotnull(passenger_count#3L), isnotnull(trip_distance#4), isnotnull(fare_amount#10), (passenger..., Format: Parquet, Location: InMemoryFileIndex(2 paths)[file:/home/compute/hanson.l/spark-nyc-taxi-student/data/raw/yellow_tri..., PartitionFilters: [], PushedFilters: [IsNotNull(passenger_count), IsNotNull(trip_distance), IsNotNull(fare_amount), GreaterThan(passen..., ReadSchema: struct<VendorID:int,tpep_pickup_datetime:timestamp_ntz,tpep_dropoff_datetime:timestamp_ntz,passen...
+      :           +- Sort [LocationID#36 ASC NULLS FIRST], false, 0
+      :              +- Exchange hashpartitioning(LocationID#36, 25), ENSURE_REQUIREMENTS, [plan_id=143]
+      :                 +- Filter isnotnull(LocationID#36)
+      :                    +- FileScan csv [LocationID#36,Borough#37,Zone#38] Batched: false, DataFilters: [isnotnull(LocationID#36)], Format: CSV, Location: InMemoryFileIndex(1 paths)[file:/home/compute/hanson.l/spark-nyc-taxi-student/data/raw/taxi_zone_..., PartitionFilters: [], PushedFilters: [IsNotNull(LocationID)], ReadSchema: struct<LocationID:int,Borough:string,Zone:string>
+      +- Sort [LocationID#205 ASC NULLS FIRST], false, 0
+         +- Exchange hashpartitioning(LocationID#205, 25), ENSURE_REQUIREMENTS, [plan_id=151]
+            +- Filter isnotnull(LocationID#205)
+               +- FileScan csv [LocationID#205,Borough#206,Zone#207] Batched: false, DataFilters: [isnotnull(LocationID#205)], Format: CSV, Location: InMemoryFileIndex(1 paths)[file:/home/compute/hanson.l/spark-nyc-taxi-student/data/raw/taxi_zone_..., PartitionFilters: [], PushedFilters: [IsNotNull(LocationID)], ReadSchema: struct<LocationID:int,Borough:string,Zone:string>
+
+
++-----------+-----------+--------------------+-----+
+|pickup_date|pickup_hour|             PU_Zone|count|
++-----------+-----------+--------------------+-----+
+| 2023-03-20|         15|            Kips Bay|   66|
+| 2023-02-04|         15|Sutton Place/Turt...|  112|
+| 2023-03-11|         12|Washington Height...|    1|
+| 2023-03-05|         21|      Outside of NYC|    1|
+| 2023-02-19|         21|       East Elmhurst|   29|
+| 2023-02-03|         13|         JFK Airport|  224|
+| 2023-03-27|          0|         JFK Airport|  296|
+| 2023-02-01|         12|   LaGuardia Airport|  170|
+| 2023-03-24|         15|   LaGuardia Airport|  298|
+| 2023-02-14|         19|   LaGuardia Airport|  180|
++-----------+-----------+--------------------+-----+
+only showing top 10 rows
+None
++-----------+--------------------+-------------+----+
+|pickup_date|             PU_Zone|PU_Zone_Count|rank|
++-----------+--------------------+-------------+----+
+| 2001-01-01|West Chelsea/Huds...|            1|   1|
+| 2001-01-01|         JFK Airport|            1|   2|
+| 2001-01-01|      Midtown Center|            1|   3|
+| 2002-12-31|         JFK Airport|            2|   1|
+| 2003-01-01|         JFK Airport|            2|   1|
+| 2003-01-01|TriBeCa/Civic Center|            1|   2|
+| 2008-12-31|         JFK Airport|            3|   1|
+| 2008-12-31|Upper East Side N...|            1|   2|
+| 2008-12-31|   LaGuardia Airport|            1|   3|
+| 2008-12-31|Upper West Side N...|            1|   4|
+| 2009-01-01|    Garment District|            1|   1|
+| 2014-11-19|         Murray Hill|            1|   1|
+| 2023-01-31|Greenwich Village...|            2|   1|
+| 2023-01-31|        East Chelsea|            1|   2|
+| 2023-01-31|Greenwich Village...|            1|   3|
+| 2023-01-31|       Midtown North|            1|   4|
+| 2023-01-31|                SoHo|            1|   5|
+| 2023-01-31|         JFK Airport|            1|   6|
+| 2023-01-31|Meatpacking/West ...|            1|   7|
+| 2023-02-01|      Midtown Center|         5901|   1|
++-----------+--------------------+-------------+----+
+only showing top 20 rows
+None
++-----------+------------+--------------------+
+|vendor_name|week_of_year|   sum(total_amount)|
++-----------+------------+--------------------+
+|   Creative|          12|   4940627.569999976|
+|   VeriFone|           8|  1.42284580799993E7|
+|   Creative|           9|   4897872.069999969|
+|   VeriFone|           5|    9657092.93000014|
+|   Creative|           6|   4668507.569999963|
+|   VeriFone|           7|1.4201341379999394E7|
+|   Creative|           8|   4664742.259999954|
+|   VeriFone|           6|1.4300902829999397E7|
+|   VeriFone|           1|               699.2|
+|   Creative|          11|           5285206.5|
++-----------+------------+--------------------+
+only showing top 10 rows
+None
++--------+--------------------+---------------------+---------------+-------------+----------+------------------+------------+------------+------------+-----------+-----+-------+----------+------------+---------------------+------------+--------------------+-----------+-----------+-----------+------------+-----------+----------+--------------------+----------+--------------------+
+|VendorID|tpep_pickup_datetime|tpep_dropoff_datetime|passenger_count|trip_distance|RatecodeID|store_and_fwd_flag|PULocationID|DOLocationID|payment_type|fare_amount|extra|mta_tax|tip_amount|tolls_amount|improvement_surcharge|total_amount|congestion_surcharge|Airport_fee|pickup_date|pickup_hour|week_of_year|vendor_name|PU_Borough|             PU_Zone|DO_Borough|             DO_Zone|
++--------+--------------------+---------------------+---------------+-------------+----------+------------------+------------+------------+------------+-----------+-----+-------+----------+------------+---------------------+------------+--------------------+-----------+-----------+-----------+------------+-----------+----------+--------------------+----------+--------------------+
+|       2| 2023-02-01 00:00:28|  2023-02-01 00:12:54|              1|          5.4|         1|                 N|         140|          42|           1|       23.3|  1.0|    0.5|       2.0|         0.0|                  1.0|        30.3|                 2.5|        0.0| 2023-02-01|          0|           5|   VeriFone| Manhattan|     Lenox Hill East| Manhattan|Central Harlem North|
+|       1| 2023-03-01 00:19:43|  2023-03-01 00:39:37|              1|          5.3|         1|                 N|         113|          61|           1|       26.1|  3.5|    0.5|       9.3|         0.0|                  1.0|        40.4|                 2.5|        0.0| 2023-03-01|          0|           9|   Creative| Manhattan|Greenwich Village...|  Brooklyn| Crown Heights North|
+|       2| 2023-02-01 00:10:48|  2023-02-01 00:18:09|              1|         1.57|         1|                 N|         125|         107|           1|       10.0|  1.0|    0.5|       1.0|         0.0|                  1.0|        16.0|                 2.5|        0.0| 2023-02-01|          0|           5|   VeriFone| Manhattan|           Hudson Sq| Manhattan|            Gramercy|
+|       2| 2023-03-01 00:08:04|  2023-03-01 00:11:06|              1|         1.23|         1|                 N|          79|         137|           1|        7.2|  1.0|    0.5|      2.44|         0.0|                  1.0|       14.64|                 2.5|        0.0| 2023-03-01|          0|           9|   VeriFone| Manhattan|        East Village| Manhattan|            Kips Bay|
+|       1| 2023-03-01 00:45:12|  2023-03-01 00:52:37|              1|          2.0|         1|                 N|          48|         164|           2|       10.7|  3.5|    0.5|       0.0|         0.0|                  1.0|        15.7|                 2.5|        0.0| 2023-03-01|          0|           9|   Creative| Manhattan|        Clinton East| Manhattan|       Midtown South|
+|       2| 2023-02-01 00:33:51|  2023-02-01 00:37:34|              1|         0.51|         1|                 N|         114|         211|           1|        5.8|  1.0|    0.5|      1.62|         0.0|                  1.0|       12.42|                 2.5|        0.0| 2023-02-01|          0|           5|   VeriFone| Manhattan|Greenwich Village...| Manhattan|                SoHo|
+|       2| 2023-02-01 00:35:06|  2023-02-01 00:45:47|              1|         3.44|         1|                 N|         140|         226|           1|       16.3|  1.0|    0.5|      4.26|         0.0|                  1.0|       25.56|                 2.5|        0.0| 2023-02-01|          0|           5|   VeriFone| Manhattan|     Lenox Hill East|    Queens|           Sunnyside|
+|       2| 2023-03-01 00:08:25|  2023-03-01 00:39:30|              2|         12.4|         1|                 N|         138|         231|           1|       52.7|  6.0|    0.5|     12.54|         0.0|                  1.0|       76.49|                 2.5|       1.25| 2023-03-01|          0|           9|   VeriFone|    Queens|   LaGuardia Airport| Manhattan|TriBeCa/Civic Center|
+|       2| 2023-02-01 00:20:40|  2023-02-01 00:33:56|              1|         7.49|         1|                 N|          48|         243|           1|       30.3|  1.0|    0.5|      8.82|         0.0|                  1.0|       44.12|                 2.5|        0.0| 2023-02-01|          0|           5|   VeriFone| Manhattan|        Clinton East| Manhattan|Washington Height...|
+|       1| 2023-02-01 00:12:39|  2023-02-01 00:40:36|              1|          8.9|         1|                 N|         137|         244|           1|       41.5|  3.5|    0.5|       3.5|         0.0|                  1.0|        50.0|                 2.5|        0.0| 2023-02-01|          0|           5|   Creative| Manhattan|            Kips Bay| Manhattan|Washington Height...|
++--------+--------------------+---------------------+---------------+-------------+----------+------------------+------------+------------+------------+-----------+-----+-------+----------+------------+---------------------+------------+--------------------+-----------+-----------+-----------+------------+-----------+----------+--------------------+----------+--------------------+
+only showing top 10 rows
+None
+Time elapsed for clean, join, and aggregates: 1.2977 with 25 partitions. Used sort merge join: True

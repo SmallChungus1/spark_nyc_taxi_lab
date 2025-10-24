@@ -20,6 +20,11 @@ from typing import List, Dict
 from pyspark.sql import SparkSession, DataFrame, Window, functions as F, types as T
 import os
 import time
+from dotenv import load_dotenv
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
+from pyspark import SparkConf
+import re
 
 def build_spark(app_name: str, shuffle_partitions: int = 200) -> SparkSession:
     spark = (
@@ -79,29 +84,50 @@ def clean_and_transform(df: DataFrame) -> DataFrame:
 
     return df_clean
 
-def join_zones(df: DataFrame, zones: DataFrame) -> DataFrame:
+def join_zones(df: DataFrame, zones: DataFrame, use_sort_merge: bool, spark: SparkSession) -> DataFrame:
     """
     Join PULocationID and DOLocationID to zone names.
     - zones: LocationID, Borough, Zone
     - Consider broadcasting zones (small table)
     """
+    
+    time_start = time.perf_counter()
     zones_select = zones.select("LocationID", "Borough", "Zone")
+
+    #force spark to use sort merge by setting autoBroadcast threshold to 0 bytes
+    if use_sort_merge:
+        print("using sort merge join")
+        #https://stackoverflow.com/questions/48145514/how-to-hint-for-sort-merge-join-or-shuffled-hash-join-and-skip-broadcast-hash-j
+        spark.conf.set("spark.sql.join.autoBroadcastJoinThreshold", -1)
+        spark.conf.set("spark.sql.join.preferSortMergeJoin", True)
+        join_table_right = zones_select
+        join_hint = "MERGE"
+        print(f"sort merge join settings: {spark.conf.get("spark.sql.join.autoBroadcastJoinThreshold")} | {spark.conf.get("spark.sql.join.preferSortMergeJoin")}")
+
+    else:
+        print("using broadcast join")
+        join_table_right = F.broadcast(zones_select)
+        join_hint = "" #should be broadcast by default
+
+    
+    #using hints for joins: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-hints.html
     #pu join
     pu_joined_df = (
-        df.join(F.broadcast(zones_select), df.PULocationID == zones_select.LocationID, "left")
+        df.hint(join_hint).join(join_table_right.hint(join_hint), df.PULocationID == zones_select.LocationID, "left")
         .drop("LocationID").withColumnRenamed("Zone", "PU_Zone").withColumnRenamed("Borough", "PU_Borough")
     )
     #do join
     pu_do_joined_df = (
-        pu_joined_df.join(F.broadcast(zones_select), df.DOLocationID == zones_select.LocationID, "left")
+        pu_joined_df.hint(join_hint).join(join_table_right.hint(join_hint), df.DOLocationID == zones_select.LocationID, "left")
         .drop("LocationID").withColumnRenamed("Zone", "DO_Zone").withColumnRenamed("Borough", "DO_Borough")
     )
 
+    time_end = time.perf_counter()
+    print(f"join_zones time elapsed: {time_end-time_start:.4f}")
     #print(pu_do_joined_df.select("PULocationID","DOLocationID","PU_Zone", "DO_Zone").show(10))
-    print(f"Join type:")
+    print(f"Join Plan:")
     pu_do_joined_df.explain()
     return pu_do_joined_df
-
 
 
 def agg_hourly_pickups(df_enriched: DataFrame) -> DataFrame:
@@ -139,6 +165,29 @@ def _decode_pem_from_b64(b64_str: str) -> str:
         return ""
     return base64.b64decode(b64_str).decode("utf-8")
 
+#for loading pem and connecting to snowflake: https://community.snowflake.com/s/article/How-to-connect-snowflake-with-Spark-connector-using-Public-Private-Key
+def _load_pem(pem_path: str) -> str:
+
+    with open(pem_path, "rb") as key_file:
+        p_key = serialization.load_pem_private_key(
+        key_file.read(),
+        password=None,
+        backend=default_backend()
+        )
+    
+    pkb = p_key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption()
+    )
+    
+    pkb = pkb.decode("UTF-8")
+    # pkb = re.sub("-*(BEGIN|END) PRIVATE KEY-*\n","",pkb).replace("\n","") #gives missing password error if removing the begin end private key lines
+
+    return pkb
+
+
+
 def write_to_snowflake(dfs: Dict[str, DataFrame], sf_opts: Dict[str, str], mode: str = "overwrite"):
     """
     Requires Spark Snowflake connector on classpath.
@@ -152,8 +201,9 @@ def write_to_snowflake(dfs: Dict[str, DataFrame], sf_opts: Dict[str, str], mode:
     - Call writer.mode(mode).save()
     """
     # TODO: Implement Snowflake writes using sf_opts.
-    writer = df.write.format("snowflake").options(**sf_opts).option("dbtable", "HW4TABLE")
-    witer.mode(mode).save()
+    for _, df in dfs.items():
+        writer = df.write.format("snowflake").options(**sf_opts).option("dbtable", "HW4TABLE")
+        writer.mode(mode).save()
 
 def parse_args():
     p = argparse.ArgumentParser()
@@ -173,9 +223,12 @@ def parse_args():
     p.add_argument("--sfAuthenticator", default=os.getenv("SF_AUTHENTICATOR", "snowflake"))
     p.add_argument("--sfPrivateKeyB64", default=os.getenv("SF_PRIVATE_KEY_B64", ""))
     p.add_argument("--sfPrivateKeyPassphrase", default=os.getenv("SF_PRIVATE_KEY_PASSPHRASE", ""))
+    p.add_argument("--sfPrivateKeyPath", type=str, default=os.getenv("SF_PRIVATE_KEY_PATH", "")) #providing direct path to p8 file for snowflake auth
+    p.add_argument("--forceSortMerge", action="store_true", help="force spark to use sort merge join.")
     return p.parse_args()
 
 def main():
+    load_dotenv()
     args = parse_args()
     spark = build_spark("NYC Taxi ETL (Student)", shuffle_partitions=args.shuffle_partitions)
     print(args.input_paths)
@@ -190,7 +243,7 @@ def main():
     clean = clean_and_transform(trips)
     print(clean.show(10))
     print(clean.select("PULocationID", "DOLocationID").show(10))
-    enriched = join_zones(clean, zones)
+    enriched = join_zones(clean, zones, args.forceSortMerge, spark)
 
     # # Aggregations
     hourly = agg_hourly_pickups(enriched)
@@ -202,39 +255,45 @@ def main():
     print(top10.show(20))
     print(weekly_rev.show(10))
     print(enriched.show(10))
-    print(f"Time elapsed for clean, join, and aggregates: {end_time-start_time:.4f}")
-    
+    print(f"Time elapsed for clean, join, and aggregates: {end_time-start_time:.4f} with {args.shuffle_partitions} partitions. Used sort merge join: {args.forceSortMerge}")
+
     # Outputs
-    write_curated(enriched, args.curated_out)
-    write_aggregates_local(
-        {"hourly_pickups": hourly, "top10_zones_daily": top10, "weekly_revenue_vendor": weekly_rev},
-        args.aggregates_out,
-    )
+    # write_curated(enriched, args.curated_out)
+    # write_aggregates_local(
+    #     {"hourly_pickups": hourly, "top10_zones_daily": top10, "weekly_revenue_vendor": weekly_rev},
+    #     args.aggregates_out,
+    # )
 
-    # if args.write_snowflake.lower() == "true":
-    #     sf_opts = {
-    #         "sfURL": args.sfURL,
-    #         "sfUser": args.sfUser,
-    #         "sfDatabase": args.sfDatabase,
-    #         "sfSchema": args.sfSchema,
-    #         "sfWarehouse": args.sfWarehouse,
-    #         "sfAuthenticator": args.sfAuthenticator,
-    #     }
-    #     # Prefer key-pair if provided
-    #     pem = _decode_pem_from_b64(args.sfPrivateKeyB64)
-    #     if pem:
-    #         sf_opts["pem_private_key"] = pem
-    #         if args.sfPrivateKeyPassphrase:
-    #             sf_opts["pem_private_key_passphrase"] = args.sfPrivateKeyPassphrase
-    #     elif args.sfPassword:
-    #         # Fallback to username/password if allowed by your account policy
-    #         sf_opts["sfPassword"] = args.sfPassword
 
-    #     write_to_snowflake(
-    #         {"HOURLY_PICKUPS": hourly, "TOP10_ZONES_DAILY": top10, "WEEKLY_REVENUE_VENDOR": weekly_rev},
-    #         sf_opts,
-    #         mode="overwrite",
-    #     )
+    if args.write_snowflake.lower() == "true":
+        sf_opts = {
+            "sfURL": args.sfURL,
+            "sfUser": args.sfUser,
+            "sfDatabase": args.sfDatabase,
+            "sfSchema": args.sfSchema,
+            "sfWarehouse": args.sfWarehouse,
+            "sfAuthenticator": args.sfAuthenticator,
+        }
+
+        # snowflake auth by loading in pem file directly https://community.snowflake.com/s/article/How-to-connect-snowflake-with-Spark-connector-using-Public-Private-Key
+        # Prefer key-pair if provided
+        #pem = _decode_pem_from_b64(args.sfPrivateKeyB64)
+        # pem = _load_pem(args.sfPrivateKeyPath)
+        # if pem:
+
+        #     sf_opts["pem_private_key"] = pem
+
+        #     if args.sfPrivateKeyPassphrase:
+        #         sf_opts["pem_private_key_passphrase"] = args.sfPrivateKeyPassphrase
+        # elif args.sfPassword:
+        #     # Fallback to username/password if allowed by your account policy
+        #     sf_opts["sfPassword"] = args.sfPassword
+
+        # write_to_snowflake(
+        #     {"HOURLY_PICKUPS": hourly, "TOP10_ZONES_DAILY": top10, "WEEKLY_REVENUE_VENDOR": weekly_rev},
+        #     sf_opts,
+        #     mode="overwrite",
+        # )
 
     spark.stop()
 
